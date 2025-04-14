@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #chat {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f9f9f9;
+            margin-bottom: 10px;
+        }
+        #messageInput {
+            width: 70%;
+            padding: 10px;
+        }
+        #sendBtn {
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>WebSocket Chat</h2>
+    <div id="chat"></div>
+    <input type="text" id="messageInput" placeholder="Type your message..." />
+    <button id="sendBtn">Send</button>
+
+    <script>
+        // Ask for username first
+        const username = prompt("Enter your name:") || "Anonymous";
+
+        // Connect to WebSocket
+        const socket = new WebSocket(`ws://${location.host}`);
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('messageInput');
+        const button = document.getElementById('sendBtn');
+
+        // WebSocket events
+        socket.addEventListener('open', () => {
+            appendMessage(`✅ Connected as ${username}`);
+        });
+
+        socket.addEventListener('message', (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                appendMessage(`[${msg.time}] ${msg.user}: ${msg.text}`);
+            } catch (err) {
+                console.error('Could not parse message', err);
+            }
+        });
+
+        // Send message when button is clicked or Enter is pressed
+        button.addEventListener('click', sendMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text || socket.readyState !== WebSocket.OPEN) return;
+
+            const msg = {
+                user: username,
+                text: text,
+            };
+            socket.send(JSON.stringify(msg));
+            input.value = '';
+        }
+
+        function appendMessage(msg) {
+            const el = document.createElement('div');
+            el.textContent = msg;
+            chat.appendChild(el);
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
